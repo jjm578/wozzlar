@@ -1791,8 +1791,16 @@ let _inTourMode = false; // Flag to track if we're in tour mode
 
 function saveTourState(){
   // Save the current daily puzzle state before entering tour
+  // We need to serialize Sets properly
+  const stateToSave = {
+    ...state,
+    inPhrase: Array.from(state.inPhrase),
+    wordsContaining: Object.fromEntries(
+      Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
+    )
+  };
   _tourState = {
-    savedState: JSON.parse(JSON.stringify(state)),
+    savedState: JSON.parse(JSON.stringify(stateToSave)),
     savedDaily: localStorage.getItem(todayKey())
   };
 }
@@ -1801,6 +1809,13 @@ function restoreTourState(){
   // Restore the daily puzzle state after tour
   if(_tourState){
     state = _tourState.savedState;
+    
+    // Restore Sets from arrays
+    state.inPhrase = new Set(state.inPhrase);
+    state.wordsContaining = Object.fromEntries(
+      Object.entries(state.wordsContaining).map(([k, v]) => [k, new Set(v)])
+    );
+    
     if(_tourState.savedDaily){
       localStorage.setItem(todayKey(), _tourState.savedDaily);
     }
