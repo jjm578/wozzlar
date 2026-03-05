@@ -94,6 +94,21 @@ function phraseToWords(phrase){
     .filter(Boolean);
 }
 
+/* Fetch with an explicit timeout so a slow/stalled connection fails fast */
+async function fetchWithTimeout(url, options, timeoutMs){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    return await fetch(url, { ...options, signal: controller.signal });
+  }finally{
+    clearTimeout(timeoutId);
+  }
+}
+
+const FETCH_TIMEOUT_MS = 8000;    /* 8 s per attempt */
+const FETCH_MAX_ATTEMPTS = 3;     /* try up to 3 times before giving up */
+const FETCH_RETRY_DELAY_MS = 500; /* base delay between retries (ms) */
+
 async function fetchCSVRows(url, cacheKey){
   const cached = sessionStorage.getItem(cacheKey);
   if(cached){
@@ -102,21 +117,41 @@ async function fetchCSVRows(url, cacheKey){
       if(Array.isArray(parsed) && parsed.length) return parsed;
     }catch{}
   }
-  const res = await fetch(url, { cache: "no-store" });
-  if(!res.ok) throw new Error("Fetch failed: " + res.status);
-  const text = await res.text();
-  const rows = parseCSV(text);
-  sessionStorage.setItem(cacheKey, JSON.stringify(rows));
-  return rows;
+  let lastErr;
+  for(let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++){
+    if(attempt > 0){
+      console.warn("wozzlar: fetch retry", attempt, url, lastErr);
+      await new Promise(r => setTimeout(r, FETCH_RETRY_DELAY_MS * attempt));
+    }
+    try{
+      const res = await fetchWithTimeout(url, { cache: "no-store" }, FETCH_TIMEOUT_MS);
+      if(!res.ok) throw new Error("Fetch failed: " + res.status);
+      const text = await res.text();
+      const rows = parseCSV(text);
+      sessionStorage.setItem(cacheKey, JSON.stringify(rows));
+      return rows;
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
 }
 
-// NEW: always fetch fresh (no sessionStorage) for DAILY
+// always fetch fresh (no sessionStorage) for DAILY — retries with timeout
 async function fetchCSVRowsFresh(url){
-  const busted = url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-  const res = await fetch(busted, { cache: "no-store" });
-  if(!res.ok) throw new Error("Fetch failed: " + res.status);
-  const text = await res.text();
-  return parseCSV(text);
+  let lastErr;
+  for(let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++){
+    if(attempt > 0){
+      console.warn("wozzlar: fetch retry", attempt, url, lastErr);
+      await new Promise(r => setTimeout(r, FETCH_RETRY_DELAY_MS * attempt));
+    }
+    try{
+      const busted = url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+      const res = await fetchWithTimeout(busted, { cache: "no-store" }, FETCH_TIMEOUT_MS);
+      if(!res.ok) throw new Error("Fetch failed: " + res.status);
+      const text = await res.text();
+      return parseCSV(text);
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
 }
 
 async function getDailyPuzzleFromSheet(){
