@@ -1844,7 +1844,7 @@ function loadTourPuzzle(){
   state.locks  = state.words.map(w => Array.from({length:w.length}, ()=> null));
   state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
   state.flowIndex = state.words.map(()=>0);
-  state.persistentNear = state.words.map(w => Array.from({length:w.length},()=>false));
+  state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
   _inTourMode = true;
   setBadge('none');
   rebuildUIFromState();
@@ -1860,12 +1860,15 @@ function startTour(){
   menu.classList.remove('show');
   hamburger.setAttribute('aria-expanded','false');
 
-  // Save current state and load tour puzzle
-  saveTourState();
+  // Save current state and load tour puzzle (only if not already in tour mode)
+  if(!_inTourMode){
+    saveTourState();
+  }
   loadTourPuzzle();
 
-  // Recreate the instance every time to ensure fresh tour state
-  _tgInstance = new tourguide.TourGuideClient({
+  // Create the instance once to avoid duplicate DOM nodes
+  if(!_tgInstance){
+    _tgInstance = new tourguide.TourGuideClient({
       steps: [
         {
           title: "Welcome to Wozzlar! 🧙‍♂️",
@@ -1941,11 +1944,12 @@ function startTour(){
       dialogClass: "wz-tour-dialog",
     });
 
-  _tgInstance.onAfterExit(() => {
-    // Restore daily puzzle when tour exits
-    restoreTourState();
-    try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
-  });
+    _tgInstance.onAfterExit(() => {
+      // Restore daily puzzle when tour exits
+      restoreTourState();
+      try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
+    });
+  }
 
   // Sync backdrop color with the current day/night theme each time the tour starts.
   const isDay = document.body.classList.contains('day');
