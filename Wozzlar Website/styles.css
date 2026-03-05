@@ -267,3 +267,114 @@
   }
   .share-btn svg{ width:20px; height:20px; display:block; }
   .share-btn.disabled{ opacity:0.45; pointer-events:none; }
+
+  /* ===== TourGuide.js custom theme ===== */
+  .tg-dialog {
+    background: linear-gradient(180deg, rgba(21,21,40,.98), rgba(14,14,26,.98)) !important;
+    border: 1px solid rgba(42,42,68,.95) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 20px 60px #0008 !important;
+    color: var(--text) !important;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif !important;
+    max-width: min(360px, 90vw) !important;
+  }
+  body.day .tg-dialog {
+    background: linear-gradient(180deg, #ffffff, #f4f5fb) !important;
+    border-color: rgba(15,18,32,.14) !important;
+    box-shadow: 0 20px 60px rgba(15,18,32,.16) !important;
+  }
+
+  .tg-dialog .tg-dialog-header {
+    border-bottom: 1px solid rgba(42,42,68,.7) !important;
+    padding-bottom: 10px !important;
+  }
+  body.day .tg-dialog .tg-dialog-header {
+    border-color: rgba(15,18,32,.12) !important;
+  }
+
+  .tg-dialog .tg-dialog-title,
+  .tg-dialog [class*="title"] {
+    font-family: "Uncial Antiqua", ui-serif, Georgia, serif !important;
+    color: #ffd1e6 !important;
+    font-size: 1.05rem !important;
+    letter-spacing: .02em !important;
+  }
+  body.day .tg-dialog .tg-dialog-title,
+  body.day .tg-dialog [class*="title"] {
+    color: #b0185e !important;
+  }
+
+  .tg-dialog .tg-dialog-body,
+  .tg-dialog [class*="body"] {
+    color: var(--text) !important;
+    font-size: .97rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .tg-dialog .tg-dialog-footer {
+    border-top: 1px solid rgba(42,42,68,.7) !important;
+    padding-top: 10px !important;
+  }
+  body.day .tg-dialog .tg-dialog-footer {
+    border-color: rgba(15,18,32,.12) !important;
+  }
+
+  .tg-dialog .tg-btn {
+    height: 36px !important;
+    padding: 0 14px !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+    font-weight: 700 !important;
+    font-size: .9rem !important;
+    border: 1px solid rgba(42,42,63,.85) !important;
+    background: rgba(22,22,38,.92) !important;
+    color: var(--text) !important;
+  }
+  body.day .tg-dialog .tg-btn {
+    background: #fff !important;
+    border-color: rgba(15,18,32,.14) !important;
+    color: var(--text) !important;
+  }
+  .tg-dialog .tg-btn-primary {
+    background: var(--hit) !important;
+    color: #120513 !important;
+    border-color: #ff4fa3 !important;
+  }
+
+  .tg-dialog .tg-close-btn,
+  .tg-dialog [class*="close"] {
+    color: rgba(255,255,255,.45) !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  body.day .tg-dialog .tg-close-btn,
+  body.day .tg-dialog [class*="close"] {
+    color: rgba(15,18,32,.40) !important;
+  }
+  .tg-dialog .tg-close-btn:hover,
+  .tg-dialog [class*="close"]:hover {
+    color: var(--text) !important;
+  }
+
+  .tg-backdrop {
+    background: rgba(0,0,0,.72) !important;
+  }
+  body.day .tg-backdrop {
+    background: rgba(15,18,32,.40) !important;
+  }
+
+  /* Step counter (X of Y) */
+  .tg-dialog [class*="step"] [class*="counter"],
+  .tg-dialog [class*="counter"] {
+    color: rgba(255,255,255,.5) !important;
+    font-size: .85rem !important;
+  }
+  body.day .tg-dialog [class*="counter"] {
+    color: rgba(15,18,32,.50) !important;
+  }
+
+  /* Target highlight ring */
+  .tg-target-highlighted {
+    box-shadow: 0 0 0 4px #ff4fa355, 0 0 0 8px #ff4fa322 !important;
+    border-radius: var(--radius, 10px) !important;
+  }
