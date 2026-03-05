@@ -380,6 +380,7 @@ const hamburger  = document.getElementById('hamburger');
 const menu       = document.getElementById('menu');
 const feedbackLink = document.getElementById('feedbackLink');
 const howToPlayLink = document.getElementById('howToPlayLink');
+const tourLink   = document.getElementById('tourLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
 
@@ -1777,6 +1778,101 @@ function showHowToPlay(){
   modalEl.classList.add('show');
 }
 
+/* ===== TOUR GUIDE ===== */
+let _tgInstance = null;
+
+function startTour(){
+  if(typeof tourguide === 'undefined' || !tourguide.TourGuideClient){
+    showInfoModal("The tour guide couldn't load. Check your connection and try again.");
+    return;
+  }
+
+  menu.classList.remove('show');
+  hamburger.setAttribute('aria-expanded','false');
+
+  // Create the instance once; re-use it on subsequent calls to avoid duplicate
+  // backdrop/dialog DOM nodes and the completeOnFinish localStorage block.
+  if(!_tgInstance){
+    _tgInstance = new tourguide.TourGuideClient({
+      steps: [
+        {
+          title: "Welcome to Wozzlar! 🧙‍♂️",
+          content: "Guess today's hidden phrase, word by word, before you run out of tries. Let's walk through the basics!",
+        },
+        {
+          target: "#phrase",
+          title: "Today's Phrase",
+          content: "The puzzle is a multi-word phrase. Each row is one word you need to solve. Click or tap any row to make it the active word you're working on.",
+        },
+        {
+          target: "#kb",
+          title: "The Keyboard ⌨️",
+          content: "Tap letters on the on-screen keyboard — or just type on your physical keyboard — to fill in your guess for the active word. Then press <strong>ENTER</strong> to submit.",
+        },
+        {
+          target: "#phrase",
+          title: "Tile Colors After a Guess 🎨",
+          content: "<span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> — right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> — letter is in the phrase, just wrong position. Blue tiles stay blue until that spot is solved.<br><strong>Dark = MISS</strong> — not in the phrase at all.",
+        },
+        {
+          target: "#kb",
+          title: "Keyboard Colors 🔑",
+          content: "<span style='color:#FF4FA3;font-weight:800'>Pink</span> key = placed correctly somewhere. <span style='color:#3FCBFF;font-weight:800'>Blue</span> key = exists in the phrase (wrong spot). <strong>Dark</strong> key = not in the phrase (it disappears!). A pink key with tiny blue squares shows how many more of that letter are still hiding.",
+        },
+        {
+          target: "#btnSolve",
+          title: "ALL IN Mode 🎯",
+          content: "Feeling confident? Press <strong>ALL IN</strong> to fill in the entire phrase at once — it counts as one guess. Get it right and earn a 🏆 Wozzlar badge. Miss it, and you'll get a 🎺 Super Womp!",
+        },
+        {
+          target: "#phrase",
+          title: "Side Hints 📜",
+          content: "Your previous guesses appear as small tags to the left of each word. <u>Underlined letters</u> are in that word but in a different position — use them to narrow down your next guess!",
+        },
+        {
+          target: ".nav-left",
+          title: "Guesses & Badges 🏅",
+          content: "You get <strong>7 guesses</strong> per day. Solve in time → 🏆 Wozzlar. Need more → 😐 Womp. Miss an ALL IN → 🎺 Super Womp. Complete daily puzzles to build your win streak!",
+        },
+        {
+          target: "#btnPractice",
+          title: "Practice Mode 🎮",
+          content: "Hit <strong>Practice</strong> for unlimited free puzzles — no streaks, no badges. A <em>REVEAL ANSWER</em> button appears too, so you can experiment freely.",
+        },
+        {
+          title: "You're Ready! 🚀",
+          content: "That's everything! Open the menu anytime for the full <em>How to Play</em> guide. Now go solve today's phrase — good luck! 🧙‍♂️",
+        },
+      ],
+      debug: false,
+      exitOnClickOutside: false,
+      nextLabel: "Next →",
+      prevLabel: "← Back",
+      finishLabel: "Let's Play!",
+      dialogMaxWidth: 360,
+      backdropClass: "wz-tour-backdrop",
+      dialogClass: "wz-tour-dialog",
+    });
+
+    _tgInstance.onAfterExit(() => {
+      try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
+    });
+  }
+
+  // Sync backdrop color with the current day/night theme each time the tour starts.
+  const isDay = document.body.classList.contains('day');
+  _tgInstance.setOptions({ backdropColor: isDay ? "rgba(15,18,32,0.45)" : "rgba(0,0,0,0.80)" });
+
+  // Clear the "finished" flag so the tour always restarts from step 0.
+  _tgInstance.deleteFinishedTour('all');
+  _tgInstance.start();
+}
+
+tourLink.addEventListener('click', (e)=>{
+  e.preventDefault();
+  startTour();
+});
+
 /* ===== Init & navigation safety ===== */
 async function goToDaily(){
   modalEl.classList.remove('show');
@@ -1796,6 +1892,11 @@ async function init(){
   brandBtn.addEventListener('click', ()=>{ goToDaily(); });
 
   window.addEventListener('beforeunload', saveDailyState);
+
+  // Auto-start tour for first-time visitors
+  if(!localStorage.getItem('wozzlar_tour_seen_v1')){
+    setTimeout(startTour, 900);
+  }
 }
 window.addEventListener('DOMContentLoaded', ()=>{ init(); });
 
