@@ -343,7 +343,12 @@ const PRACTICE_PUZZLES = [
   { theme: "Holiday", words: ["WARM", "UP", "WITH", "HOT", "COCOA"] },
 ];
 
-/* Tour puzzle for interactive walkthrough */
+/* Tour puzzle for interactive walkthrough 
+   NOTE: Tour step text (lines 1880, 1885, 1920) contains hardcoded references to:
+   - "2-word phrase" (must match words.length)
+   - "4 letters" and "6 letters" (must match words[0].length and words[1].length)
+   If changing this puzzle, update those step descriptions accordingly.
+*/
 const TOUR_PUZZLE = { theme: "Magic", words: ["WORD","WIZARD"] };
 
 /* Kept: old anchor-based numbering as fallback only */
