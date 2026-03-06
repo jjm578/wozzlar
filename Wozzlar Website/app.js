@@ -1872,47 +1872,57 @@ function startTour(){
       steps: [
         {
           title: "Welcome to Wozzlar! 🧙‍♂️",
-          content: "Let's learn by playing! We'll solve \"WORD WIZARD\" together. Guess the hidden phrase, word by word, before you run out of tries.",
+          content: "Let's learn by playing! You'll solve a mystery phrase, word by word. Ready to discover how it works?",
         },
         {
           target: "#phrase",
-          title: "The Puzzle 🎯",
-          content: "Here's our practice phrase: <strong>WORD WIZARD</strong>. Each row is one word you need to solve. The first word \"WORD\" is already selected (highlighted). Let's start!",
+          title: "Your Puzzle 🎯",
+          content: "This is a <strong>2-word phrase</strong> waiting to be solved. Each row is one word — but you won't know what the phrase is until you figure it out! The first word (4 letters) is already selected (highlighted).",
+        },
+        {
+          target: "#phrase",
+          title: "Choose Your Word 🎲",
+          content: "You can click or tap <strong>any word row</strong> to work on it — you don't have to go top to bottom! Try clicking the second word row (6 letters) to see it become active, then click back to the first word to continue.",
         },
         {
           target: "#kb",
           title: "Make Your First Guess 🔤",
-          content: "Let's try guessing <strong>WARM</strong> for the first word. Type <strong>W-A-R-M</strong> using your keyboard or the on-screen keys, then press <strong>ENTER</strong> to submit. Click <strong>Next</strong> after you submit.",
+          content: "Now let's guess the first word! Try any 4-letter word you like. Some ideas: <strong>WARM</strong>, <strong>WORK</strong>, <strong>WORD</strong>, <strong>WIND</strong>, or <strong>WILD</strong>. Type your guess using the keyboard, then press <strong>ENTER</strong>. Click <strong>Next</strong> after you submit.",
         },
         {
           target: "#phrase",
-          title: "Understanding the Colors 🎨",
-          content: "Great! Now you see the colors:<br><span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> — right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> — letter is in the phrase, just wrong position.<br><strong>Dark = MISS</strong> — not in the phrase at all.<br><br>Notice the <strong>W</strong> is pink (correct!) and <strong>R</strong> is blue (in the word, wrong spot).",
-        },
-        {
-          target: "#kb",
-          title: "Try Again! 💡",
-          content: "The <strong>W</strong> is correct at position 1, and <strong>R</strong> is in the word but wrong spot. Let's try <strong>WORD</strong>. Type it and press <strong>ENTER</strong>. Click <strong>Next</strong> after you submit.",
-        },
-        {
-          target: "#phrase",
-          title: "Word Solved! ✨",
-          content: "Perfect! All letters are pink — you solved \"WORD\"! The game automatically moves to the next word. Now let's solve \"WIZARD\".",
+          title: "Understanding Tile Colors 🎨",
+          content: "Check out the colors!<br><span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> — right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> — letter is in the phrase, wrong position (stays blue until solved).<br><strong>Dark = MISS</strong> — not in the phrase at all.<br><br>Use these clues to narrow down the word!",
         },
         {
           target: "#phrase",
           title: "Side Hints 📜",
-          content: "Your previous guesses appear as small tags on the left. <u>Underlined letters</u> mean the letter belongs in that word but in a different position. Use these hints!",
+          content: "Look to the left of the word! Your guess now appears as a small tag. Any <u>underlined letters</u> mean that letter belongs in this word but in a different position — super helpful for your next guess!",
         },
         {
           target: "#kb",
-          title: "Solve the Second Word 🔮",
-          content: "For \"WIZARD\", try <strong>LIZARD</strong>. Type it and press <strong>ENTER</strong> to see what matches! Click <strong>Next</strong> after you submit.",
+          title: "Keyboard Hints 🔑",
+          content: "The keyboard also shows what you've learned:<br><span style='color:#FF4FA3;font-weight:800'>Pink</span> key = placed correctly somewhere.<br><span style='color:#3FCBFF;font-weight:800'>Blue</span> key = in the phrase (wrong spot).<br><strong>Dark</strong> key = not in phrase (disappears!).<br>Pink keys with tiny blue squares show how many more of that letter remain.",
+        },
+        {
+          target: "#kb",
+          title: "Keep Guessing! 💡",
+          content: "Use the color clues and side hints to try another guess for the first word. Each pink letter is locked in place! Type another 4-letter word and press <strong>ENTER</strong>. Click <strong>Next</strong> after you submit.",
         },
         {
           target: "#phrase",
-          title: "Almost There! 🎪",
-          content: "Notice the letters that matched! Now try <strong>WIZARD</strong> to complete the puzzle. Type it and press <strong>ENTER</strong>. Click <strong>Next</strong> after you submit.",
+          title: "Solving Words ✨",
+          content: "Keep guessing until all letters are pink! When you complete a word, the game automatically moves to the next unsolved word. Try to figure out the first word before moving on. (Hint: it's a common 4-letter word)",
+        },
+        {
+          target: "#phrase",
+          title: "Second Word 🔮",
+          content: "Once you solve the first word, move to the second word (6 letters). You can click its row to select it if it's not already active. Use what you learned from your first word guesses to help! Try some 6-letter words and see what matches.",
+        },
+        {
+          target: "#phrase",
+          title: "Complete the Phrase! 🎪",
+          content: "Keep guessing both words until you figure out the mystery phrase! The phrase is related to magic ✨ — can you solve it?",
         },
         {
           target: ".nav-left",
