@@ -1877,12 +1877,12 @@ function startTour(){
         {
           target: "#phrase",
           title: "Your Puzzle 🎯",
-          content: "This is a <strong>2-word phrase</strong> waiting to be solved. Each row is one word — but you won't know what the phrase is until you figure it out! The first word (4 letters) is already selected (highlighted).",
+          content: "This is a <strong>2-word phrase</strong> waiting to be solved. Each row is one word &mdash; but you won't know what the phrase is until you figure it out! The first word (4 letters) is already selected (highlighted).",
         },
         {
           target: "#phrase",
           title: "Choose Your Word 🎲",
-          content: "You can click or tap <strong>any word row</strong> to work on it — you don't have to go top to bottom! Try clicking the second word row (6 letters) to see it become active, then click back to the first word to continue.",
+          content: "You can click or tap <strong>any word row</strong> to work on it &mdash; you don't have to go top to bottom! Try clicking the second word row (6 letters) to see it become active, then click back to the first word to continue.",
         },
         {
           target: "#kb",
@@ -1892,12 +1892,12 @@ function startTour(){
         {
           target: "#phrase",
           title: "Understanding Tile Colors 🎨",
-          content: "Check out the colors!<br><span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> — right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> — letter is in the phrase, wrong position (stays blue until solved).<br><strong>Dark = MISS</strong> — not in the phrase at all.<br><br>Use these clues to narrow down the word!",
+          content: "Check out the colors!<br><span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> &mdash; right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> &mdash; letter is in the phrase, wrong position (stays blue until solved).<br><strong>Dark = MISS</strong> &mdash; not in the phrase at all.<br><br>Use these clues to narrow down the word!",
         },
         {
           target: "#phrase",
           title: "Side Hints 📜",
-          content: "Look to the left of the word! Your guess now appears as a small tag. Any <u>underlined letters</u> mean that letter belongs in this word but in a different position — super helpful for your next guess!",
+          content: "Look to the left of the word! Your guess now appears as a small tag. Any <u>underlined letters</u> mean that letter belongs in this word but in a different position &mdash; super helpful for your next guess!",
         },
         {
           target: "#kb",
@@ -1922,7 +1922,7 @@ function startTour(){
         {
           target: "#phrase",
           title: "Complete the Phrase! 🎪",
-          content: "Keep guessing both words until you figure out the mystery phrase! The phrase is related to magic ✨ — can you solve it?",
+          content: "Keep guessing both words until you figure out the mystery phrase! The phrase is related to magic ✨ &mdash; can you solve it?",
         },
         {
           target: ".nav-left",
@@ -1932,16 +1932,16 @@ function startTour(){
         {
           target: "#btnSolve",
           title: "ALL IN Mode 🎯",
-          content: "Feeling confident? Press <strong>ALL IN</strong> to fill in the entire phrase at once — it counts as one guess. Get it right and earn a 🏆 Wozzlar badge. Miss it, and you'll get a 🎺 Super Womp!",
+          content: "Feeling confident? Press <strong>ALL IN</strong> to fill in the entire phrase at once &mdash; it counts as one guess. Get it right and earn a 🏆 Wozzlar badge. Miss it, and you'll get a 🎺 Super Womp!",
         },
         {
           target: "#btnPractice",
           title: "Practice Mode 🎮",
-          content: "Hit <strong>Practice</strong> for unlimited free puzzles — no streaks, no badges. A <em>REVEAL ANSWER</em> button appears too, so you can experiment freely.",
+          content: "Hit <strong>Practice</strong> for unlimited free puzzles &mdash; no streaks, no badges. A <em>REVEAL ANSWER</em> button appears too, so you can experiment freely.",
         },
         {
           title: "You're Ready! 🚀",
-          content: "That's everything! Open the menu anytime for the full <em>How to Play</em> guide. Now go solve today's phrase — good luck! 🧙‍♂️",
+          content: "That's everything! Open the menu anytime for the full <em>How to Play</em> guide. Now go solve today's phrase &mdash; good luck! 🧙‍♂️",
         },
       ],
       debug: false,
