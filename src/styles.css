@@ -443,3 +443,136 @@
       box-shadow: 0 0 0 4px rgba(255,79,163,.6) !important;
     }
   }
+
+  /* ===== Install Prompt Banner ===== */
+  .install-prompt {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--panel);
+    border-top: 1px solid var(--panel-border);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    padding: 16px;
+    display: none;
+    animation: slideUp 0.4s ease-out;
+  }
+  
+  body.day .install-prompt {
+    box-shadow: 0 -4px 20px rgba(15,18,32,0.12);
+  }
+  
+  .install-prompt.show {
+    display: block;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .install-prompt-content {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .install-prompt-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+  
+  .install-prompt-text {
+    flex: 1;
+  }
+  
+  .install-prompt-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin: 0 0 4px 0;
+    color: var(--text);
+  }
+  
+  .install-prompt-message {
+    font-size: 0.85rem;
+    margin: 0;
+    color: var(--text-soft);
+    line-height: 1.4;
+  }
+  
+  .install-prompt-close {
+    background: transparent;
+    border: none;
+    color: var(--text-soft);
+    cursor: pointer;
+    padding: 8px;
+    font-size: 24px;
+    line-height: 1;
+    flex-shrink: 0;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+  
+  .install-prompt-close:hover {
+    background: rgba(127,201,255,0.08);
+  }
+  
+  /* iOS-specific arrow pointing up */
+  .install-prompt-arrow {
+    position: absolute;
+    top: -40px;
+    right: 50%;
+    transform: translateX(50%);
+    font-size: 32px;
+    animation: bounce 1.5s ease-in-out infinite;
+    display: none;
+  }
+  
+  .install-prompt.ios .install-prompt-arrow {
+    display: block;
+  }
+  
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateX(50%) translateY(0);
+    }
+    50% {
+      transform: translateX(50%) translateY(-8px);
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .install-prompt {
+      animation: none;
+    }
+    .install-prompt-arrow {
+      animation: none;
+    }
+  }
+  
+  @media (max-width: 520px) {
+    .install-prompt {
+      padding: 12px;
+    }
+    .install-prompt-content {
+      gap: 10px;
+    }
+    .install-prompt-icon {
+      font-size: 28px;
+    }
+    .install-prompt-title {
+      font-size: 0.9rem;
+    }
+    .install-prompt-message {
+      font-size: 0.8rem;
+    }
+  }
