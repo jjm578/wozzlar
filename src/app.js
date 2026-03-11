@@ -1644,6 +1644,9 @@ howToPlayLink.addEventListener('click', (e)=>{
 });
 
 /* ===== Add to Home Screen ===== */
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const INSTALL_PROMPT_DISMISS_DAYS = 7;
+
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -1652,6 +1655,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 function isMobile(){
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function isIOS(){
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function isAndroid(){
+  return /Android/i.test(navigator.userAgent);
 }
 async function handleAddToHomeScreen(){
   if(deferredInstallPrompt){
@@ -1669,10 +1680,10 @@ async function handleAddToHomeScreen(){
   }
 
   const isMac = navigator.platform && /Mac/i.test(navigator.platform);
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isIOSDevice = isIOS();
 
   let html = '<div class="wizard-wrap"><div class="wizard-emoji">📌</div><div class="speech">';
-  if(isIOS){
+  if(isIOSDevice){
     html += `<h4>Add to Home Screen (iOS)</h4>
       <p>In Safari, tap the <strong>Share</strong> icon, then scroll and tap <strong>Add to Home Screen</strong>.</p>`;
   }else if(isMobile()){
@@ -1715,9 +1726,9 @@ function shouldShowInstallPrompt() {
     const dismissed = localStorage.getItem('wozzlar_install_prompt_dismissed');
     if (dismissed) {
       const dismissedTime = parseInt(dismissed, 10);
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      // Show again after 7 days
-      if (daysSinceDismissed < 7) return false;
+      const daysSinceDismissed = (Date.now() - dismissedTime) / MS_PER_DAY;
+      // Show again after configured number of days
+      if (daysSinceDismissed < INSTALL_PROMPT_DISMISS_DAYS) return false;
     }
   } catch(e) {}
   
@@ -1727,14 +1738,14 @@ function shouldShowInstallPrompt() {
 function showInstallPrompt() {
   if (!shouldShowInstallPrompt()) return;
   
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOSDevice = isIOS();
+  const isAndroidDevice = isAndroid();
   
-  if (isIOS) {
+  if (isIOSDevice) {
     installPrompt.classList.add('ios');
     installPromptTitle.textContent = 'Install Wozzlar';
     installPromptMessage.textContent = "Install this app on your iPhone for easy access: tap Share ⬆️ and then 'Add to Home Screen'.";
-  } else if (isAndroid) {
+  } else if (isAndroidDevice) {
     installPrompt.classList.remove('ios');
     installPromptTitle.textContent = 'Install Wozzlar';
     installPromptMessage.textContent = "Install this app for easy access: tap the menu (⋮) and then 'Install app' or 'Add to Home screen'.";

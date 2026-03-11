@@ -541,13 +541,6 @@
     display: block;
   }
   
-  /* For iOS Safari, arrow should point to share button in bottom toolbar */
-  @supports (-webkit-touch-callout: none) {
-    .install-prompt.ios .install-prompt-arrow {
-      right: 50%;
-    }
-  }
-  
   @keyframes bounce {
     0%, 100% {
       transform: translateX(50%) translateY(0);
