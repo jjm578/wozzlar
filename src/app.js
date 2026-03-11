@@ -1647,6 +1647,7 @@ howToPlayLink.addEventListener('click', (e)=>{
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const INSTALL_PROMPT_DISMISS_DAYS = 7;
 const INSTALL_PROMPT_DELAY_MS = 2000;
+const INSTALL_PROMPT_TITLE = 'Install Wozzlar';
 
 // Platform-specific install messages
 const INSTALL_MESSAGES = {
@@ -1751,16 +1752,16 @@ function showInstallPrompt() {
   
   if (isIOSDevice) {
     installPrompt.classList.add('ios');
-    installPromptTitle.textContent = 'Install Wozzlar';
+    installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
     installPromptMessage.textContent = INSTALL_MESSAGES.ios;
   } else if (isAndroidDevice) {
     installPrompt.classList.remove('ios');
-    installPromptTitle.textContent = 'Install Wozzlar';
+    installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
     installPromptMessage.textContent = INSTALL_MESSAGES.android;
   } else {
     // Generic mobile message
     installPrompt.classList.remove('ios');
-    installPromptTitle.textContent = 'Install Wozzlar';
+    installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
     installPromptMessage.textContent = INSTALL_MESSAGES.generic;
   }
   
