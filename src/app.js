@@ -2081,21 +2081,12 @@ function startTour(){
       
       // Custom navigation to handle step transitions
       onBeforeStepChange: (oldStep, newStep) => {
-        // If trying to go to the completion step, check if puzzle is solved
-        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
-          // Don't allow navigation to final step until puzzle is complete
-          return false;
-        }
-        return true;
-      },
-      
-      onAfterStepChange: (step) => {
-        // After advancing to "Your Turn to Solve!" step, hide the dialog
-        // but keep tour mode active so we can show the final step when puzzle is solved
-        if(step === TOUR_STEP_YOUR_TURN) {
+        // When user clicks Next on "Your Turn to Solve!" step, prevent navigation
+        // and instead hide the dialog so they can play
+        if(oldStep === TOUR_STEP_YOUR_TURN && newStep === TOUR_STEP_COMPLETE && !_tourWaitingForCompletion) {
+          // First time clicking Next from "Your Turn" step - hide dialog and stay on this step
           _tourWaitingForCompletion = true;
-          // Hide the tour dialog temporarily using DOM manipulation
-          // Don't call finish() - just hide the element
+          // Hide the tour dialog to let user play
           const dialogEl = document.querySelector('.tg-dialog');
           const backdropEl = document.querySelector('.wz-tour-backdrop');
           if(dialogEl) {
@@ -2104,7 +2095,20 @@ function startTour(){
           if(backdropEl) {
             backdropEl.style.display = 'none';
           }
+          // Prevent navigation - stay at step 5
+          return false;
         }
+        
+        // If trying to go to completion step when puzzle not solved, prevent it
+        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
+          return false;
+        }
+        
+        return true;
+      },
+      
+      onAfterStepChange: (step) => {
+        // No special handling needed here anymore
       },
     });
 
