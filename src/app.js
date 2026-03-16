@@ -1208,12 +1208,27 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
-  // During tour mode, advance to the final step instead of showing completion modal
-  if(_inTourMode) {
+  // During tour mode, show the final step when puzzle is completed
+  if(_inTourMode && _tourWaitingForCompletion) {
     if(_tgInstance && isPuzzleSolved()){
-      // Advance to the final "Puzzle Complete" step
-      _tgInstance.visitStep(FINAL_TOUR_STEP_INDEX);
+      // Show only the final "Puzzle Complete" step
+      _tourWaitingForCompletion = false;
+      // Need to restart the tour to show just the final step
+      _tgInstance.start();
+      _tgInstance.visitStep(TOUR_STEP_COMPLETE);
+      
+      // Override the onAfterExit just for this final step to restore state
+      _tgInstance.onAfterExit(() => {
+        _inTourMode = false;
+        restoreTourState();
+        try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
+      });
     }
+    return;
+  }
+  
+  // If in tour mode but not waiting for completion, just return
+  if(_inTourMode) {
     return;
   }
   
@@ -1892,7 +1907,7 @@ function showHowToPlay(){
         <p>Pink key – letter placed correctly somewhere.</p>
         <p>Blue key – letter exists elsewhere in the phrase.</p>
         <p>Dark key – letter not in the phrase (the letter will disappear from the key once confirmed).</p>
-        <p>Pink key with blue squares – shows how many more of that letter remain in the phrase.</p>
+        <p>Blue squares on available keys – shows how many more of that letter remain in the phrase.</p>
         <h4 style="margin-top:10px">Hints Beside Each Word</h4>
         <p>Left side shows your past unique guesses for that word.</p>
         <p>Underlined letters mean the letter belongs in that word but in a different position.</p>
@@ -1926,6 +1941,9 @@ function showHowToPlay(){
 let _tgInstance = null;
 let _tourState = null; // Stores daily puzzle state during tour
 let _inTourMode = false; // Flag to track if we're in tour mode
+let _tourWaitingForCompletion = false; // Flag to track if we're waiting for puzzle completion after step 5
+const TOUR_STEP_YOUR_TURN = 5; // Index of "Your Turn to Solve!" step
+const TOUR_STEP_COMPLETE = 6; // Index of "Puzzle Complete!" step
 
 function saveTourState(){
   // Save the current daily puzzle state before entering tour
@@ -2029,7 +2047,7 @@ function startTour(){
         {
           target: "#kb",
           title: "Your Keyboard Learns",
-          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on pink keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
+          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on available keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
         },
         {
           title: "Your Turn to Solve! 🎮",
@@ -2038,7 +2056,7 @@ function startTour(){
         {
           target: "#phrase",
           title: "Puzzle Complete! 🎉",
-          content: "Amazing work! You've mastered Wozzlar! 🏆<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
+          content: "Magical work, my friend. You will be a word wizard in no time! 🧙‍♂️✨<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
         },
       ];
   
@@ -2057,20 +2075,35 @@ function startTour(){
       backdropClass: "wz-tour-backdrop",
       dialogClass: "wz-tour-dialog",
       
-      // Custom navigation to check puzzle completion before final step
+      // Custom navigation to handle step transitions
       onBeforeStepChange: (oldStep, newStep) => {
-        // If trying to go to the last step (Puzzle Complete), check if puzzle is solved
-        if(newStep === FINAL_TOUR_STEP_INDEX && !isPuzzleSolved()){
+        // If trying to go to the completion step, check if puzzle is solved
+        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
           // Don't allow navigation to final step until puzzle is complete
           return false;
         }
         return true;
       },
+      
+      onAfterStepChange: (step) => {
+        // After advancing to "Your Turn to Solve!" step, close the dialog
+        // but keep tour mode active so we can show the final step when puzzle is solved
+        if(step === TOUR_STEP_YOUR_TURN) {
+          _tourWaitingForCompletion = true;
+          // Finish/close the tour dialog temporarily
+          // We'll manually show the final step when puzzle is complete
+          if(_tgInstance) {
+            _tgInstance.finish();
+          }
+        }
+      },
     });
 
     _tgInstance.onAfterExit(() => {
-      // Restore daily puzzle when tour exits
-      restoreTourState();
+      // Only restore if we're not waiting for completion
+      if(!_tourWaitingForCompletion) {
+        restoreTourState();
+      }
       try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
     });
   }
