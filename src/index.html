@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Wozzlar — Daily Phrase Puzzle</title>
-<link rel="icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="favicon.ico">
+<link rel="icon" href="images/favicon.ico">
+<link rel="apple-touch-icon" href="images/favicon.ico">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Wozzlar is a daily phrase puzzle. Guess each word using clever feedback and a clean on-screen keyboard." />
@@ -22,6 +22,20 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Splash/Landing Screen -->
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-content">
+      <h1 class="splash-title">Wozzlar</h1>
+      <img src="../public/images/wozzlar-logo.png" alt="Wozzlar Logo" class="splash-logo-img" onerror="this.src='images/wozzlar-logo.png'">
+      <p class="splash-tagline">Get 7 chances to solve a phrase puzzle.</p>
+      <button class="splash-play-btn" id="splashPlayBtn">Play</button>
+      <div class="splash-meta" id="splashMeta">
+        <span class="splash-date" id="splashDate"></span>
+        <span class="splash-number" id="splashNumber"></span>
+      </div>
+    </div>
+  </div>
+
   <nav class="nav" aria-label="Top navigation">
     <div class="nav-left">
       <div class="hamburger" id="hamburger" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
@@ -40,7 +54,6 @@
       <button id="btnPractice" class="btn">Practice</button>
       <div class="menu" id="menu">
         <a href="#" id="howToPlayLink">How to Play</a>
-        <a href="#" id="tourLink">Take a Tour</a>
         <a href="#" id="a2hsLink">Add to Home Screen</a>
         <a href="#" id="feedbackLink">Give us Feedback</a>
         <a href="#" id="contactLink">Contact Us</a>
@@ -93,6 +106,19 @@
         <button class="btn primary" id="modalPrimary" hidden>OK</button>
         <button class="btn primary" id="modalShare" hidden>Share</button>
       </div>
+    </div>
+  </div>
+
+  <div class="install-prompt" id="installPrompt" role="region" aria-labelledby="installPromptTitle" aria-describedby="installPromptMessage">
+    <div class="install-prompt-arrow" aria-hidden="true">⬆️</div>
+    <div class="install-prompt-content">
+      <div class="install-prompt-icon" aria-hidden="true">📲</div>
+      <div class="install-prompt-text">
+        <div class="install-prompt-title" id="installPromptTitle"></div>
+        <div class="install-prompt-message" id="installPromptMessage"></div>
+      </div>
+      <button class="install-prompt-action" id="installPromptAction" aria-label="Install app">Install</button>
+      <button class="install-prompt-close" id="installPromptClose" aria-label="Dismiss install prompt">&times;</button>
     </div>
   </div>
 

@@ -368,6 +368,11 @@ const hintEl    = document.getElementById('hint');
 
 const shareButton = document.getElementById('shareButton');
 
+const splashScreen = document.getElementById('splashScreen');
+const splashPlayBtn = document.getElementById('splashPlayBtn');
+const splashDate = document.getElementById('splashDate');
+const splashNumber = document.getElementById('splashNumber');
+
 const modalEl    = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
 const modalMsg   = document.getElementById('modalMsg');
@@ -388,13 +393,18 @@ const hamburger  = document.getElementById('hamburger');
 const menu       = document.getElementById('menu');
 const feedbackLink = document.getElementById('feedbackLink');
 const howToPlayLink = document.getElementById('howToPlayLink');
-const tourLink   = document.getElementById('tourLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
 
 const wozzBadge  = document.getElementById('wozzBadge');
 const superBadge = document.getElementById('superBadge');
 const wompBadge  = document.getElementById('wompBadge');
+
+const installPrompt = document.getElementById('installPrompt');
+const installPromptClose = document.getElementById('installPromptClose');
+const installPromptAction = document.getElementById('installPromptAction');
+const installPromptTitle = document.getElementById('installPromptTitle');
+const installPromptMessage = document.getElementById('installPromptMessage');
 
 const BRAND_LETTERS = ['bW','bO','bZ1','bZ2','bL','bA','bR'].map(id => document.getElementById(id));
 
@@ -559,7 +569,11 @@ function buildPhrase(){
       tile.addEventListener('click', (ev)=>{
         const wi = parseInt(row.dataset.row,10);
         if(state.mode !== 'normal') return;
-        if(state.active !== wi){ setActive(wi); return; }
+        // Single click should both activate word AND set position
+        if(state.active !== wi){ 
+          setActive(wi); 
+        }
+        // Always set the flowIndex to the clicked position
         state.flowIndex[wi] = j;
         updateNormalCaretHighlight();
       });
@@ -1194,8 +1208,33 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
-  // Don't show completion modal during tour mode
-  if(_inTourMode) return;
+  // During tour mode, show the final step when puzzle is completed
+  if(_inTourMode && _tourWaitingForCompletion) {
+    if(_tgInstance && isPuzzleSolved()){
+      // Show only the final "Puzzle Complete" step
+      // Reset the waiting flag BEFORE visiting the final step
+      // This ensures that when the user closes the final step, onAfterExit
+      // will see _tourWaitingForCompletion=false and proceed with normal cleanup
+      _tourWaitingForCompletion = false;
+      // Show the dialog again and jump to final step
+      const dialogEl = document.querySelector('.tg-dialog');
+      const backdropEl = document.querySelector('.wz-tour-backdrop');
+      if(dialogEl) {
+        dialogEl.style.display = '';
+      }
+      if(backdropEl) {
+        backdropEl.style.display = '';
+      }
+      // Visit the final step
+      _tgInstance.visitStep(TOUR_STEP_COMPLETE);
+    }
+    return;
+  }
+  
+  // If in tour mode but not waiting for completion, just return
+  if(_inTourMode) {
+    return;
+  }
   
   setModalCloseCancelsAllIn(false);
   const solvedIn = `${state.guessCount}/${TOTAL_GUESS_LIMIT}`;
@@ -1635,10 +1674,25 @@ feedbackLink.addEventListener('click', (e)=>{
 
 howToPlayLink.addEventListener('click', (e)=>{
   e.preventDefault();
-  showHowToPlay();
+  menu.classList.remove('show');
+  hamburger.setAttribute('aria-expanded','false');
+  startTour(); // Use tour guide instead of static instructions
 });
 
 /* ===== Add to Home Screen ===== */
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const INSTALL_PROMPT_DISMISS_DAYS = 7;
+const INSTALL_PROMPT_DELAY_MS = 2000;
+const INSTALL_PROMPT_TITLE = 'Play Wozzlar Anytime!';
+const SPLASH_HIDE_DURATION_MS = 300; // Must match CSS transition duration (0.3s)
+
+// Platform-specific install messages - more action-oriented
+const INSTALL_MESSAGES = {
+  ios: "Tap the Share button ⬆️ below, scroll down, and select 'Add to Home Screen'",
+  android: "Tap 'Install' to add Wozzlar to your home screen",
+  generic: "Add Wozzlar to your home screen for quick access"
+};
+
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -1647,6 +1701,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 function isMobile(){
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function isIOS(){
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function isAndroid(){
+  return /Android/i.test(navigator.userAgent);
 }
 async function handleAddToHomeScreen(){
   if(deferredInstallPrompt){
@@ -1664,10 +1726,10 @@ async function handleAddToHomeScreen(){
   }
 
   const isMac = navigator.platform && /Mac/i.test(navigator.platform);
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isIOSDevice = isIOS();
 
   let html = '<div class="wizard-wrap"><div class="wizard-emoji">📌</div><div class="speech">';
-  if(isIOS){
+  if(isIOSDevice){
     html += `<h4>Add to Home Screen (iOS)</h4>
       <p>In Safari, tap the <strong>Share</strong> icon, then scroll and tap <strong>Add to Home Screen</strong>.</p>`;
   }else if(isMobile()){
@@ -1689,6 +1751,96 @@ async function handleAddToHomeScreen(){
   setModalCloseCancelsAllIn(false);
 }
 a2hsLink.addEventListener('click', (e)=>{ e.preventDefault(); handleAddToHomeScreen(); });
+
+/* ===== Install Prompt Banner (Auto-show on Mobile) ===== */
+function isStandalone() {
+  // Check if app is already installed/running as PWA
+  return (window.matchMedia('(display-mode: standalone)').matches) ||
+         (window.navigator.standalone) ||
+         document.referrer.includes('android-app://');
+}
+
+function shouldShowInstallPrompt() {
+  // Don't show if not mobile
+  if (!isMobile()) return false;
+  
+  // Don't show if already installed as PWA
+  if (isStandalone()) return false;
+  
+  // Check if user has dismissed it
+  try {
+    const dismissed = localStorage.getItem('wozzlar_install_prompt_dismissed');
+    if (dismissed) {
+      const dismissedTime = parseInt(dismissed, 10);
+      const daysSinceDismissed = (Date.now() - dismissedTime) / MS_PER_DAY;
+      // Show again after configured number of days
+      if (daysSinceDismissed < INSTALL_PROMPT_DISMISS_DAYS) return false;
+    }
+  } catch(e) {}
+  
+  return true;
+}
+
+function showInstallPrompt() {
+  if (!shouldShowInstallPrompt()) return;
+  
+  const isIOSDevice = isIOS();
+  const isAndroidDevice = isAndroid();
+  
+  if (isIOSDevice) {
+    installPrompt.classList.add('ios');
+    installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
+    installPromptMessage.textContent = INSTALL_MESSAGES.ios;
+    installPromptAction.style.display = 'none'; // Hide Install button on iOS
+  } else if (isAndroidDevice && deferredInstallPrompt) {
+    // Android with native install prompt available
+    installPrompt.classList.remove('ios');
+    installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
+    installPromptMessage.textContent = INSTALL_MESSAGES.android;
+    installPromptAction.style.display = 'block'; // Show Install button
+  } else {
+    // Generic mobile message
+    installPrompt.classList.remove('ios');
+    installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
+    installPromptMessage.textContent = INSTALL_MESSAGES.generic;
+    installPromptAction.style.display = 'none'; // Hide Install button for generic
+  }
+  
+  // Show after a short delay to not be too intrusive
+  setTimeout(() => {
+    installPrompt.classList.add('show');
+  }, INSTALL_PROMPT_DELAY_MS);
+}
+
+function hideInstallPrompt() {
+  installPrompt.classList.remove('show');
+  try {
+    localStorage.setItem('wozzlar_install_prompt_dismissed', Date.now().toString());
+  } catch(e) {}
+}
+
+// Handle install button click (for Android native prompt)
+installPromptAction.addEventListener('click', async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    try {
+      const choice = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      hideInstallPrompt();
+      if (choice && choice.outcome === 'accepted') {
+        showInfoModal("Wozzlar is being added to your home screen!");
+      }
+    } catch(e) {
+      hideInstallPrompt();
+    }
+  } else {
+    // Fallback to showing instructions
+    handleAddToHomeScreen();
+    hideInstallPrompt();
+  }
+});
+
+installPromptClose.addEventListener('click', hideInstallPrompt);
 
 /* ===== Yesterday/result badges ===== */
 function setLastResult(puzzleNumber, result){ try{ localStorage.setItem('wozzlar_last_result_v2', JSON.stringify({puzzleNumber, result})); }catch{} }
@@ -1759,7 +1911,7 @@ function showHowToPlay(){
         <p>Pink key – letter placed correctly somewhere.</p>
         <p>Blue key – letter exists elsewhere in the phrase.</p>
         <p>Dark key – letter not in the phrase (the letter will disappear from the key once confirmed).</p>
-        <p>Pink key with blue squares – shows how many more of that letter remain in the phrase.</p>
+        <p>Blue squares on available keys – shows how many more of that letter remain in the phrase.</p>
         <h4 style="margin-top:10px">Hints Beside Each Word</h4>
         <p>Left side shows your past unique guesses for that word.</p>
         <p>Underlined letters mean the letter belongs in that word but in a different position.</p>
@@ -1793,6 +1945,9 @@ function showHowToPlay(){
 let _tgInstance = null;
 let _tourState = null; // Stores daily puzzle state during tour
 let _inTourMode = false; // Flag to track if we're in tour mode
+let _tourWaitingForCompletion = false; // Flag to track if we're waiting for puzzle completion after step 5
+const TOUR_STEP_YOUR_TURN = 5; // Index of "Your Turn to Solve!" step
+const TOUR_STEP_COMPLETE = 6; // Index of "Puzzle Complete!" step
 
 function saveTourState(){
   // Save the current daily puzzle state before entering tour
@@ -1868,13 +2023,12 @@ function startTour(){
   // Save current state and load tour puzzle (only if not already in tour mode)
   if(!_inTourMode){
     saveTourState();
+    loadTourPuzzle();
   }
-  loadTourPuzzle();
+  // If already in tour mode, don't reload - just restart the tour guide
 
-  // Create the instance once to avoid duplicate DOM nodes
-  if(!_tgInstance){
-    _tgInstance = new tourguide.TourGuideClient({
-      steps: [
+  // Tour step configuration
+  const TOUR_STEPS = [
         {
           title: "Let's Play! 🧙‍♂️",
           content: "You'll solve this phrase word by word. Let me show you how the game works as you play!",
@@ -1892,50 +2046,82 @@ function startTour(){
         {
           target: "#phrase",
           title: "See the Colors?",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><strong>■ Dark</strong> means not in this word.<br><br>Letters on the left show what you typed. <em>Underlined</em> = wrong position.",
+          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br><span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;'>Little blue words</span> to the left of the puzzle words are the ones you have guessed. If one of the letters is <span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px;'>Underlined</span>, the letter is in the word, but in the wrong position.",
         },
         {
           target: "#kb",
           title: "Your Keyboard Learns",
-          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!",
+          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on available keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
         },
         {
-          target: "#phrase",
-          title: "Keep Guessing!",
-          content: "Use the color clues to figure out the first word. Try different letter combinations until all tiles turn <span style='color:#FF4FA3;font-weight:800'>pink</span>!<br><br><em>Tip: Pink tiles show correct letters. Use those and rearrange the blue ones.</em>",
-        },
-        {
-          target: "#phrase",
-          title: "Word Solved! ✨",
-          content: "Nice! When you solve a word, the game automatically moves to the next one. Now try the <strong>6-letter</strong> word below.",
-        },
-        {
-          target: "#phrase",
-          title: "Your Turn!",
-          content: "Use what you learned: guess, check colors, and adjust. You've got this! Try to solve the second word.",
+          title: "Your Turn to Solve! 🎮",
+          content: "Now use what you've learned to solve the puzzle! Try different combinations based on the color clues.<br><br>Need help? Tap the menu and select <strong>How to Play</strong> anytime to review the instructions.",
         },
         {
           target: "#phrase",
           title: "Puzzle Complete! 🎉",
-          content: "That's how you play! <strong>Daily puzzles give you 7 total guesses</strong> for the whole phrase.<br><br>Win → 🏆 Wozzlar badge · Lose → 😐 Womp badge<br><br>Hit <strong>Practice</strong> for unlimited puzzles!",
+          content: "Magical work, my friend. You will be a word wizard in no time! 🧙‍♂️✨<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
         },
-        {
-          title: "Ready! 🚀",
-          content: "Now play today's real puzzle!",
-        },
-      ],
+      ];
+  
+  const FINAL_TOUR_STEP_INDEX = TOUR_STEPS.length - 1;
+
+  // Create the instance once to avoid duplicate DOM nodes
+  if(!_tgInstance){
+    _tgInstance = new tourguide.TourGuideClient({
+      steps: TOUR_STEPS,
       debug: false,
       exitOnClickOutside: false,
       nextLabel: "Next →",
       prevLabel: "← Back",
-      finishLabel: "Let's Play!",
+      finishLabel: "Let's Play Today's Puzzle!",
       dialogMaxWidth: 360,
       backdropClass: "wz-tour-backdrop",
       dialogClass: "wz-tour-dialog",
+      
+      // Custom navigation to handle step transitions
+      onBeforeStepChange: (oldStep, newStep) => {
+        // When user clicks Next on "Your Turn to Solve!" step, prevent navigation
+        // and instead hide the dialog so they can play
+        if(oldStep === TOUR_STEP_YOUR_TURN && newStep === TOUR_STEP_COMPLETE && !_tourWaitingForCompletion) {
+          // First time clicking Next from "Your Turn" step - hide dialog and stay on this step
+          _tourWaitingForCompletion = true;
+          // Hide the tour dialog to let user play
+          const dialogEl = document.querySelector('.tg-dialog');
+          const backdropEl = document.querySelector('.wz-tour-backdrop');
+          if(dialogEl) {
+            dialogEl.style.display = 'none';
+          }
+          if(backdropEl) {
+            backdropEl.style.display = 'none';
+          }
+          // Prevent navigation - stay at step 5
+          return false;
+        }
+        
+        // If trying to go to completion step when puzzle not solved, prevent it
+        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
+          return false;
+        }
+        
+        return true;
+      },
+      
+      onAfterStepChange: (step) => {
+        // No special handling needed here anymore
+      },
     });
 
     _tgInstance.onAfterExit(() => {
-      // Restore daily puzzle when tour exits
+      // Always clean up flags, but only restore state if not waiting for puzzle completion
+      if(_tourWaitingForCompletion) {
+        // User is solving the puzzle - keep tour mode active but don't restore
+        // State will be restored when they complete the puzzle and close the final step
+        return;
+      }
+      // Normal exit - restore state and clean up
+      _inTourMode = false;
+      _tourWaitingForCompletion = false;
       restoreTourState();
       try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
     });
@@ -1949,11 +2135,6 @@ function startTour(){
   _tgInstance.start();
 }
 
-tourLink.addEventListener('click', (e)=>{
-  e.preventDefault();
-  startTour();
-});
-
 /* ===== Init & navigation safety ===== */
 async function goToDaily(){
   modalEl.classList.remove('show');
@@ -1965,6 +2146,9 @@ async function goToDaily(){
 }
 
 async function init(){
+  // Initialize splash screen
+  initSplashScreen();
+  
   // Load sheet daily (or fallback), then restore any saved daily state.
   await loadDailyPuzzle();
   showYesterdayBadgeIfAny();
@@ -1974,9 +2158,46 @@ async function init(){
 
   window.addEventListener('beforeunload', saveDailyState);
 
-  // Auto-start tour for first-time visitors
-  if(!localStorage.getItem('wozzlar_tour_seen_v1')){
-    setTimeout(startTour, 900);
+  // Splash screen always shows - user must click Play every time
+  // (localStorage check removed to show splash on every visit)
+}
+
+function initSplashScreen(){
+  // Set splash screen date and puzzle number
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  splashDate.textContent = dateStr;
+  
+  // Use the current puzzle number
+  const puzzleNum = currentPuzzleNumber();
+  splashNumber.textContent = `Daily #${puzzleNum}`;
+  
+  // Handle Play button click
+  splashPlayBtn.addEventListener('click', ()=>{
+    hideSplashScreen();
+    
+    // Auto-start tour for first-time visitors after splash
+    if(!localStorage.getItem('wozzlar_tour_seen_v1')){
+      setTimeout(startTour, 500);
+    } else {
+      // Show install prompt only if tour has been seen
+      showInstallPrompt();
+    }
+  });
+}
+
+function hideSplashScreen(immediate = false){
+  if(immediate){
+    splashScreen.style.display = 'none';
+  } else {
+    splashScreen.classList.add('hidden');
+    setTimeout(()=>{
+      splashScreen.style.display = 'none';
+    }, SPLASH_HIDE_DURATION_MS);
   }
 }
 window.addEventListener('DOMContentLoaded', ()=>{ init(); });
