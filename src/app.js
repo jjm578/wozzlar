@@ -1212,10 +1212,10 @@ function showCompletionOverlay(fromAllIn){
   if(_inTourMode && _tourWaitingForCompletion) {
     if(_tgInstance && isPuzzleSolved()){
       // Show only the final "Puzzle Complete" step
+      // Reset the waiting flag BEFORE visiting the final step
+      // This ensures that when the user closes the final step, onAfterExit
+      // will see _tourWaitingForCompletion=false and proceed with normal cleanup
       _tourWaitingForCompletion = false;
-      // Jump directly to the final step without restarting
-      // Note: _inTourMode will be set to false in onAfterExit when user closes this dialog
-      // Since _tourWaitingForCompletion is now false, the exit handler will restore state
       _tgInstance.visitStep(TOUR_STEP_COMPLETE);
     }
     return;
