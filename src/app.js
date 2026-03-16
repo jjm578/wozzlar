@@ -1216,8 +1216,16 @@ function showCompletionOverlay(fromAllIn){
       // This ensures that when the user closes the final step, onAfterExit
       // will see _tourWaitingForCompletion=false and proceed with normal cleanup
       _tourWaitingForCompletion = false;
-      // Need to restart the tour to reactivate the dialog, then jump to final step
-      _tgInstance.start();
+      // Show the dialog again and jump to final step
+      const dialogEl = document.querySelector('.tg-dialog');
+      const backdropEl = document.querySelector('.wz-tour-backdrop');
+      if(dialogEl) {
+        dialogEl.style.display = '';
+      }
+      if(backdropEl) {
+        backdropEl.style.display = '';
+      }
+      // Visit the final step
       _tgInstance.visitStep(TOUR_STEP_COMPLETE);
     }
     return;
@@ -2082,14 +2090,19 @@ function startTour(){
       },
       
       onAfterStepChange: (step) => {
-        // After advancing to "Your Turn to Solve!" step, close the dialog
+        // After advancing to "Your Turn to Solve!" step, hide the dialog
         // but keep tour mode active so we can show the final step when puzzle is solved
         if(step === TOUR_STEP_YOUR_TURN) {
           _tourWaitingForCompletion = true;
-          // Close the tour dialog temporarily by finishing
-          // The onAfterExit will check _tourWaitingForCompletion and skip state restoration
-          if(_tgInstance) {
-            _tgInstance.finish();
+          // Hide the tour dialog temporarily using DOM manipulation
+          // Don't call finish() - just hide the element
+          const dialogEl = document.querySelector('.tg-dialog');
+          const backdropEl = document.querySelector('.wz-tour-backdrop');
+          if(dialogEl) {
+            dialogEl.style.display = 'none';
+          }
+          if(backdropEl) {
+            backdropEl.style.display = 'none';
           }
         }
       },
