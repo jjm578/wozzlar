@@ -1213,8 +1213,8 @@ function showCompletionOverlay(fromAllIn){
     if(_tgInstance && isPuzzleSolved()){
       // Show only the final "Puzzle Complete" step
       _tourWaitingForCompletion = false;
-      _inTourMode = false;
       // Jump directly to the final step without restarting
+      // Note: _inTourMode will be set to false in onAfterExit when user closes the dialog
       _tgInstance.visitStep(TOUR_STEP_COMPLETE);
     }
     return;
@@ -2093,12 +2093,11 @@ function startTour(){
     });
 
     _tgInstance.onAfterExit(() => {
-      // Restore state and mark tour as seen
+      // Always restore state and clean up flags when tour exits
+      // This handles both normal completion and early exit
       _inTourMode = false;
-      if(!_tourWaitingForCompletion) {
-        restoreTourState();
-      }
       _tourWaitingForCompletion = false;
+      restoreTourState();
       try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
     });
   }
