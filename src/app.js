@@ -398,6 +398,7 @@ const wompBadge  = document.getElementById('wompBadge');
 
 const installPrompt = document.getElementById('installPrompt');
 const installPromptClose = document.getElementById('installPromptClose');
+const installPromptAction = document.getElementById('installPromptAction');
 const installPromptTitle = document.getElementById('installPromptTitle');
 const installPromptMessage = document.getElementById('installPromptMessage');
 
@@ -564,7 +565,11 @@ function buildPhrase(){
       tile.addEventListener('click', (ev)=>{
         const wi = parseInt(row.dataset.row,10);
         if(state.mode !== 'normal') return;
-        if(state.active !== wi){ setActive(wi); return; }
+        // Single click should both activate word AND set position
+        if(state.active !== wi){ 
+          setActive(wi); 
+        }
+        // Always set the flowIndex to the clicked position
         state.flowIndex[wi] = j;
         updateNormalCaretHighlight();
       });
@@ -1647,13 +1652,13 @@ howToPlayLink.addEventListener('click', (e)=>{
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const INSTALL_PROMPT_DISMISS_DAYS = 7;
 const INSTALL_PROMPT_DELAY_MS = 2000;
-const INSTALL_PROMPT_TITLE = 'Install Wozzlar';
+const INSTALL_PROMPT_TITLE = 'Play Wozzlar Anytime!';
 
-// Platform-specific install messages
+// Platform-specific install messages - more action-oriented
 const INSTALL_MESSAGES = {
-  ios: "Install this app on your iPhone for easy access: tap Share ⬆️ and then 'Add to Home Screen'.",
-  android: "Install this app for easy access: tap the menu (⋮) and then 'Install app' or 'Add to Home screen'.",
-  generic: "Add this app to your home screen for quick access."
+  ios: "Tap the Share button ⬆️ below, scroll down, and select 'Add to Home Screen'",
+  android: "Tap 'Install' to add Wozzlar to your home screen",
+  generic: "Add Wozzlar to your home screen for quick access"
 };
 
 let deferredInstallPrompt = null;
@@ -1754,15 +1759,19 @@ function showInstallPrompt() {
     installPrompt.classList.add('ios');
     installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
     installPromptMessage.textContent = INSTALL_MESSAGES.ios;
-  } else if (isAndroidDevice) {
+    installPromptAction.style.display = 'none'; // Hide Install button on iOS
+  } else if (isAndroidDevice && deferredInstallPrompt) {
+    // Android with native install prompt available
     installPrompt.classList.remove('ios');
     installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
     installPromptMessage.textContent = INSTALL_MESSAGES.android;
+    installPromptAction.style.display = 'block'; // Show Install button
   } else {
     // Generic mobile message
     installPrompt.classList.remove('ios');
     installPromptTitle.textContent = INSTALL_PROMPT_TITLE;
     installPromptMessage.textContent = INSTALL_MESSAGES.generic;
+    installPromptAction.style.display = 'none'; // Hide Install button for generic
   }
   
   // Show after a short delay to not be too intrusive
@@ -1777,6 +1786,27 @@ function hideInstallPrompt() {
     localStorage.setItem('wozzlar_install_prompt_dismissed', Date.now().toString());
   } catch(e) {}
 }
+
+// Handle install button click (for Android native prompt)
+installPromptAction.addEventListener('click', async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    try {
+      const choice = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      hideInstallPrompt();
+      if (choice && choice.outcome === 'accepted') {
+        showInfoModal("Wozzlar is being added to your home screen!");
+      }
+    } catch(e) {
+      hideInstallPrompt();
+    }
+  } else {
+    // Fallback to showing instructions
+    handleAddToHomeScreen();
+    hideInstallPrompt();
+  }
+});
 
 installPromptClose.addEventListener('click', hideInstallPrompt);
 
