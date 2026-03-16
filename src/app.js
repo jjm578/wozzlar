@@ -1658,6 +1658,7 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const INSTALL_PROMPT_DISMISS_DAYS = 7;
 const INSTALL_PROMPT_DELAY_MS = 2000;
 const INSTALL_PROMPT_TITLE = 'Play Wozzlar Anytime!';
+const SPLASH_HIDE_DURATION_MS = 300; // Must match CSS transition duration (0.3s)
 
 // Platform-specific install messages - more action-oriented
 const INSTALL_MESSAGES = {
@@ -2155,7 +2156,7 @@ function hideSplashScreen(immediate = false){
     splashScreen.classList.add('hidden');
     setTimeout(()=>{
       splashScreen.style.display = 'none';
-    }, 300);
+    }, SPLASH_HIDE_DURATION_MS);
   }
 }
 window.addEventListener('DOMContentLoaded', ()=>{ init(); });

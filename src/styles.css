@@ -204,6 +204,19 @@
     }
   }
   
+  @media (prefers-reduced-motion: reduce) {
+    .splash-screen,
+    .splash-logo span,
+    .splash-title,
+    .splash-tagline,
+    .splash-play-btn,
+    .splash-meta {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+  
   @media (max-width: 520px) {
     .splash-logo {
       font-size: 48px;
