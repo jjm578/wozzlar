@@ -370,6 +370,7 @@ const shareButton = document.getElementById('shareButton');
 
 const splashScreen = document.getElementById('splashScreen');
 const splashPlayBtn = document.getElementById('splashPlayBtn');
+const splashLoginBtn = document.getElementById('splashLoginBtn');
 const splashDate = document.getElementById('splashDate');
 const splashNumber = document.getElementById('splashNumber');
 
@@ -392,6 +393,9 @@ const brandBtn   = document.getElementById('brandBtn');
 const hamburger  = document.getElementById('hamburger');
 const menu       = document.getElementById('menu');
 const feedbackLink = document.getElementById('feedbackLink');
+
+// Track practice puzzle count for ad display
+let practicePuzzlesCompleted = 0;
 const howToPlayLink = document.getElementById('howToPlayLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
@@ -644,11 +648,15 @@ function paintRows(){
 function computeNextFlowIndex(wi){
   const L = state.entries[wi].length;
   let idx = Math.max(0, Math.min(state.flowIndex[wi] ?? 0, L-1));
+  
+  // If the current position is unlocked, use it (even if it's filled)
+  if(!isLocked(wi, idx)){ return idx; }
+  
+  // Otherwise, find the next unlocked position
   const anyEmptyEditable = state.entries[wi].some((c, p)=> !isLocked(wi,p) && c==='');
   if(!anyEmptyEditable){ return Math.max(0, L-1); }
-  if(isLocked(wi, idx) || state.entries[wi][idx]===''){ return idx; }
-  for(let p=idx+1; p<L; p++){ if(isLocked(wi,p) || state.entries[wi][p]===''){ return p; } }
-  for(let p=idx-1; p>=0; p--){ if(isLocked(wi,p) || state.entries[wi][p]===''){ return p; } }
+  for(let p=idx+1; p<L; p++){ if(!isLocked(wi,p)){ return p; } }
+  for(let p=idx-1; p>=0; p--){ if(!isLocked(wi,p)){ return p; } }
   return idx;
 }
 
@@ -1303,11 +1311,39 @@ function showCompletionOverlay(fromAllIn){
   const streak = updateStreakOnWin();
   if(!state.isPractice){
     streakLine.textContent = `🔥 Streak ${streak}`; streakLine.hidden=false;
-  } else { streakLine.hidden = true; }
+  } else { 
+    streakLine.hidden = true;
+    // Increment practice puzzle count
+    practicePuzzlesCompleted++;
+  }
 
   const shareText = buildSilhouetteShare(streak, badgeWord);
   shareWrap.hidden=false; sharePre.textContent = shareText;
-  setActions({closeText:"Close", primaryText:null, onPrimary:null, showShare:true});
+  
+  // Handle practice mode differently for first puzzle
+  if(state.isPractice && practicePuzzlesCompleted === 1){
+    setActions({
+      closeText:"Main Menu", 
+      primaryText:"Try Another", 
+      onPrimary:()=>{
+        modalEl.classList.remove('show');
+        beginPracticePuzzle();
+      }, 
+      showShare:false
+    });
+  } else if(state.isPractice && practicePuzzlesCompleted >= 2){
+    // After second puzzle, show ad again
+    setActions({
+      closeText:"Main Menu", 
+      primaryText:null, 
+      onPrimary:null, 
+      showShare:false
+    });
+    practicePuzzlesCompleted = 0; // Reset counter
+  } else {
+    setActions({closeText:"Close", primaryText:null, onPrimary:null, showShare:true});
+  }
+  
   modalEl.classList.add('show');
   saveDailyState();
 
@@ -1463,6 +1499,14 @@ modalClose.addEventListener('click', ()=> {
     ensureSolveMode(false);
   }
   setModalCloseCancelsAllIn(false);
+  
+  // If closing from practice mode, return to daily
+  if(state && state.isPractice && modalClose.textContent === "Main Menu"){
+    modalEl.classList.remove('show');
+    goToDaily();
+    return;
+  }
+  
   modalEl.classList.remove('show');
   saveDailyState();
 });
@@ -1539,19 +1583,17 @@ function showPracticeInterstitial(){
   }
   setActions({
     closeText:"Not now",
-    primaryText:"Watch Ad",
+    primaryText:"Start Practice",
     onPrimary:()=>{
-      if(modalPrimary.textContent === "Watch Ad"){
-        modalPrimary.textContent = "Start Practice";
-        modalPrimary.disabled = true;
-        startWatch();
-      }else{
-        modalEl.classList.remove('show');
-        beginPracticePuzzle();
-      }
+      modalEl.classList.remove('show');
+      beginPracticePuzzle();
     }
   });
   modalEl.classList.add('show');
+  
+  // Auto-start the ad immediately
+  modalPrimary.disabled = true;
+  startWatch();
 }
 
 /* beginPracticePuzzle now pulls from sheet first, falls back to local list (NEW) */
@@ -2207,6 +2249,11 @@ function initSplashScreen(){
       // Show install prompt only if tour has been seen
       showInstallPrompt();
     }
+  });
+  
+  // Handle Login button click
+  splashLoginBtn.addEventListener('click', ()=>{
+    showInfoModal("Log in feature coming soon! When available, you'll be able to view stats and ensure that your badges and streaks are preserved, even if cookies are deleted.");
   });
 }
 
