@@ -1238,30 +1238,7 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
-  // During tour mode, show the final step when puzzle is completed
-  if(_inTourMode && _tourWaitingForCompletion) {
-    if(_tgInstance && isPuzzleSolved()){
-      // Show only the final "Puzzle Complete" step
-      // Reset the waiting flag BEFORE visiting the final step
-      // This ensures that when the user closes the final step, onAfterExit
-      // will see _tourWaitingForCompletion=false and proceed with normal cleanup
-      _tourWaitingForCompletion = false;
-      // Show the dialog again and jump to final step
-      const dialogEl = document.querySelector('.tg-dialog');
-      const backdropEl = document.querySelector('.wz-tour-backdrop');
-      if(dialogEl) {
-        dialogEl.style.display = '';
-      }
-      if(backdropEl) {
-        backdropEl.style.display = '';
-      }
-      // Visit the final step
-      _tgInstance.visitStep(TOUR_STEP_COMPLETE);
-    }
-    return;
-  }
-  
-  // If in tour mode but not waiting for completion, just return
+  // If in tour mode, don't show the overlay - tour handles its own completion
   if(_inTourMode) {
     return;
   }
@@ -2017,48 +1994,17 @@ function showHowToPlay(){
 let _tgInstance = null;
 let _tourState = null; // Stores daily puzzle state during tour
 let _inTourMode = false; // Flag to track if we're in tour mode
-let _tourWaitingForCompletion = false; // Flag to track if we're waiting for puzzle completion after step 5
-const TOUR_STEP_YOUR_TURN = 5; // Index of "Your Turn to Solve!" step
-const TOUR_STEP_COMPLETE = 6; // Index of "Puzzle Complete!" step
-
-function serializeStateForStorage(stateObj){
-  // Helper to convert Sets to arrays for JSON serialization
-  return {
-    ...stateObj,
-    inPhrase: Array.from(stateObj.inPhrase),
-    wordsContaining: Object.fromEntries(
-      Object.entries(stateObj.wordsContaining).map(([k, v]) => [k, Array.from(v)])
-    )
-  };
-}
-
-function deserializeStateFromStorage(serializedState){
-  // Helper to convert arrays back to Sets after JSON deserialization
-  return {
-    ...serializedState,
-    inPhrase: new Set(serializedState.inPhrase),
-    wordsContaining: Object.fromEntries(
-      Object.entries(serializedState.wordsContaining).map(([k, v]) => [k, new Set(v)])
-    )
-  };
-}
-
-function positionBackdropToElement(backdropEl, targetEl){
-  // Helper to position backdrop to highlight a specific element
-  if(backdropEl && targetEl){
-    const rect = targetEl.getBoundingClientRect();
-    backdropEl.style.position = 'fixed';
-    backdropEl.style.top = `${rect.top}px`;
-    backdropEl.style.left = `${rect.left}px`;
-    backdropEl.style.width = `${rect.width}px`;
-    backdropEl.style.height = `${rect.height}px`;
-    backdropEl.style.pointerEvents = 'none'; // Allow clicks through to the element
-  }
-}
 
 function saveTourState(){
   // Save the current daily puzzle state before entering tour
-  const stateToSave = serializeStateForStorage(state);
+  // We need to serialize Sets properly
+  const stateToSave = {
+    ...state,
+    inPhrase: Array.from(state.inPhrase),
+    wordsContaining: Object.fromEntries(
+      Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
+    )
+  };
   _tourState = {
     savedState: JSON.parse(JSON.stringify(stateToSave)),
     savedDaily: localStorage.getItem(todayKey())
@@ -2068,21 +2014,19 @@ function saveTourState(){
 function restoreTourState(){
   // Restore the daily puzzle state after tour
   if(_tourState){
-    state = deserializeStateFromStorage(_tourState.savedState);
+    state = _tourState.savedState;
+    
+    // Restore Sets from arrays
+    state.inPhrase = new Set(state.inPhrase);
+    state.wordsContaining = Object.fromEntries(
+      Object.entries(state.wordsContaining).map(([k, v]) => [k, new Set(v)])
+    );
     
     if(_tourState.savedDaily){
       localStorage.setItem(todayKey(), _tourState.savedDaily);
     }
     _tourState = null;
     _inTourMode = false;
-    
-    // Clear saved tour progress when completing the tour
-    try{
-      localStorage.removeItem('wozzlar_tour_progress');
-    }catch(e){
-      console.warn('wozzlar: could not clear tour progress', e);
-    }
-    
     rebuildUIFromState();
     renderKeyCounters();
     paintRows();
@@ -2090,62 +2034,61 @@ function restoreTourState(){
   }
 }
 
-function saveTourPuzzleProgress(){
-  // Save the current tour puzzle progress to localStorage
-  if(_inTourMode && state){
-    const progressToSave = serializeStateForStorage(state);
-    try{
-      localStorage.setItem('wozzlar_tour_progress', JSON.stringify(progressToSave));
-    }catch(e){
-      console.warn('wozzlar: could not save tour progress', e);
-    }
-  }
-}
-
-function loadTourPuzzleProgress(){
-  // Try to load saved tour puzzle progress from localStorage
-  try{
-    const saved = localStorage.getItem('wozzlar_tour_progress');
-    if(saved){
-      const progressData = JSON.parse(saved);
-      return deserializeStateFromStorage(progressData);
-    }
-  }catch(e){
-    console.warn('wozzlar: could not load tour progress', e);
-  }
-  return null;
-}
-
 function loadTourPuzzle(){
-  // Try to restore saved progress first
-  const savedProgress = loadTourPuzzleProgress();
-  
-  if(savedProgress){
-    // Restore saved tour progress
-    state = savedProgress;
-  } else {
-    // Initialize game with the WORD WIZARD puzzle for the tour
-    const puz = TOUR_PUZZLE;
-    state = baseState(puz, "Tour", null);
-    state.words.forEach((w, wi) => {
-      w.split('').forEach(c => {
-        if(/[A-Z]/.test(c)){
-          state.inPhrase.add(c);
-          (state.wordsContaining[c] ||= new Set()).add(wi);
-        }
-      });
+  // Initialize game with the WORD WIZARD puzzle for the tour
+  const puz = TOUR_PUZZLE;
+  state = baseState(puz, "Tour", null);
+  state.words.forEach((w, wi) => {
+    w.split('').forEach(c => {
+      if(/[A-Z]/.test(c)){
+        state.inPhrase.add(c);
+        (state.wordsContaining[c] ||= new Set()).add(wi);
+      }
     });
-    state.solvedWord = state.words.map(()=> false);
-    state.locks  = state.words.map(w => Array.from({length:w.length}, ()=> null));
-    state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
-    state.flowIndex = state.words.map(()=>0);
-    state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
-  }
-  
+  });
+  state.solvedWord = state.words.map(()=> false);
+  state.locks  = state.words.map(w => Array.from({length:w.length}, ()=> null));
+  state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
+  state.flowIndex = state.words.map(()=>0);
+  state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
   _inTourMode = true;
   setBadge('none');
   rebuildUIFromState();
   renderKeyCounters();
+}
+
+// Automated tour demo helpers
+let _tourDemoTimeout = null;
+
+function typeLetterAnimated(letter, delay = 0) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      typeLetter(letter);
+      resolve();
+    }, delay);
+  });
+}
+
+function submitAnimated(delay = 0) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      submit();
+      resolve();
+    }, delay);
+  });
+}
+
+async function automatedDemoStep(word) {
+  // Type each letter with a slight delay for visual effect
+  for (let i = 0; i < word.length; i++) {
+    await typeLetterAnimated(word[i], 200);
+  }
+  // Wait a bit before submitting
+  await new Promise(resolve => setTimeout(resolve, 400));
+  // Submit the word
+  await submitAnimated();
+  // Wait for animation to complete
+  await new Promise(resolve => setTimeout(resolve, 600));
 }
 
 function startTour(){
@@ -2164,40 +2107,46 @@ function startTour(){
   }
   // If already in tour mode, don't reload - just restart the tour guide
 
-  // Tour step configuration
+  // Tour step configuration - now with automated demonstration
   const TOUR_STEPS = [
         {
-          title: "Let's Play! 🧙‍♂️",
-          content: "You'll solve this phrase word by word. Let me show you how the game works as you play!",
+          title: "Welcome! Let Me Show You 🧙‍♂️",
+          content: "I'll demonstrate how to play by solving a puzzle for you. Watch the letters appear and see how the colors guide you to the answer!",
         },
         {
           target: "#phrase",
           title: "Your Mystery Phrase",
-          content: "Two words to discover. The first word has <strong>4 letters</strong>. Click the top row to start working on it.",
-        },
-        {
-          target: "#kb",
-          title: "Make Your First Guess",
-          content: "Type any 4-letter word you want and press <strong>ENTER</strong>. Go ahead, try it! I'll wait... ⏸️",
+          content: "Two words to discover: <strong>WORD</strong> and <strong>WIZARD</strong>. Let's start by guessing the first word. I'll type '<strong>ROCK</strong>' to show you how it works.",
         },
         {
           target: "#phrase",
-          title: "See the Colors?",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br><span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;'>Little blue words</span> to the left of the puzzle words are the ones you have guessed. If one of the letters is <span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px;'>Underlined</span>, the letter is in the word, but in the wrong position.",
+          title: "See the Colors? 🎨",
+          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br>Notice the <strong>O</strong> and <strong>R</strong> turned blue - they're in 'WORD' but in different positions!",
         },
         {
           target: "#kb",
-          title: "Your Keyboard Learns",
-          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on available keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
+          title: "Your Keyboard Updates 📝",
+          content: "See how the keyboard changed? Keys you've used show their status:<br><br>• <strong>Blue keys</strong> = letters in the puzzle<br>• <strong>Dark keys</strong> = not in the puzzle<br><br>The small numbers show how many more of that letter remain.",
         },
         {
-          title: "Your Turn to Solve! 🎮",
-          content: "Now use what you've learned to solve the puzzle! Try different combinations based on the color clues.<br><br>Need help? Tap the menu and select <strong>How to Play</strong> anytime to review the instructions.",
+          target: "#phrase",
+          title: "Using the Clues 💡",
+          content: "Now I'll try '<strong>WORD</strong>' based on what we learned. Watch how all four letters turn pink when we get it right!",
+        },
+        {
+          target: "#phrase",
+          title: "On to Word Two! ✨",
+          content: "Great! First word done. Now for '<strong>WIZARD</strong>' - a 6-letter word. I'll guess '<strong>WANDER</strong>' first to learn which letters are in it.",
+        },
+        {
+          target: "#phrase",
+          title: "Almost There! 🎯",
+          content: "Look at those clues! <strong>W</strong> and <strong>A</strong> are pink, <strong>D</strong> and <strong>R</strong> are blue. Now I know enough to solve it with '<strong>WIZARD</strong>'!",
         },
         {
           target: "#phrase",
           title: "Puzzle Complete! 🎉",
-          content: "Magical work, my friend. You will be a word wizard in no time! 🧙‍♂️✨<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
+          content: "Magical work! That's how you play Wozzlar.<br><br><strong>In the real game:</strong><br>• Daily puzzles give you 7 guesses<br>• Solve it to earn badges<br>• Build your streak!<br><br>Ready to try today's puzzle?",
         },
       ];
   
@@ -2216,58 +2165,64 @@ function startTour(){
       backdropClass: "wz-tour-backdrop",
       dialogClass: "wz-tour-dialog",
       
-      // Custom navigation to handle step transitions
-      onBeforeStepChange: (oldStep, newStep) => {
-        // When user clicks Next on "Your Turn to Solve!" step, prevent navigation
-        // and instead show pink spotlight on the entire game area so they can play
-        if(oldStep === TOUR_STEP_YOUR_TURN && newStep === TOUR_STEP_COMPLETE && !_tourWaitingForCompletion) {
-          // First time clicking Next from "Your Turn" step - show spotlight and let them play
-          _tourWaitingForCompletion = true;
-          
-          // Save tour progress before hiding dialog
-          saveTourPuzzleProgress();
-          
-          // Hide the tour dialog but keep the backdrop highlighting the game area
-          const dialogEl = document.querySelector('.tg-dialog');
-          if(dialogEl) {
-            dialogEl.style.display = 'none';
-          }
-          
-          // Position the backdrop to highlight the entire stage (puzzle + keyboard)
-          const stageEl = document.getElementById('stage');
-          const backdropEl = document.querySelector('.wz-tour-backdrop');
-          positionBackdropToElement(backdropEl, stageEl);
-          
-          // Prevent navigation - stay at step 5
-          return false;
+      // Custom navigation to handle step transitions with automated demos
+      onBeforeStepChange: async (oldStep, newStep) => {
+        // Clear any pending demo timeouts
+        if(_tourDemoTimeout) {
+          clearTimeout(_tourDemoTimeout);
+          _tourDemoTimeout = null;
         }
         
-        // If trying to go to completion step when puzzle not solved, prevent it
-        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
-          return false;
+        // Perform automated actions at specific steps
+        if(newStep === 2) {
+          // After step 1, automatically type and submit "ROCK"
+          _tourDemoTimeout = setTimeout(async () => {
+            await automatedDemoStep('ROCK');
+          }, 800);
+          return true;
+        }
+        
+        if(newStep === 4) {
+          // After step 3, automatically type and submit "WORD"
+          _tourDemoTimeout = setTimeout(async () => {
+            await automatedDemoStep('WORD');
+          }, 800);
+          return true;
+        }
+        
+        if(newStep === 5) {
+          // After step 4, automatically type and submit "WANDER"
+          _tourDemoTimeout = setTimeout(async () => {
+            await automatedDemoStep('WANDER');
+          }, 800);
+          return true;
+        }
+        
+        if(newStep === 6) {
+          // After step 5, automatically type and submit "WIZARD"
+          _tourDemoTimeout = setTimeout(async () => {
+            await automatedDemoStep('WIZARD');
+          }, 800);
+          return true;
         }
         
         return true;
       },
       
       onAfterStepChange: (step) => {
-        // No special handling needed here anymore
+        // No special handling needed here
       },
     });
 
     _tgInstance.onAfterExit(() => {
-      // Save tour progress before exiting
-      saveTourPuzzleProgress();
-      
-      // Always clean up flags, but only restore state if not waiting for puzzle completion
-      if(_tourWaitingForCompletion) {
-        // User is solving the puzzle - keep tour mode active but don't restore
-        // State will be restored when they complete the puzzle and close the final step
-        return;
+      // Clear any pending demo timeouts
+      if(_tourDemoTimeout) {
+        clearTimeout(_tourDemoTimeout);
+        _tourDemoTimeout = null;
       }
-      // Normal exit - restore state and clean up
+      
+      // Restore state and clean up
       _inTourMode = false;
-      _tourWaitingForCompletion = false;
       restoreTourState();
       try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
     });
