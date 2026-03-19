@@ -2058,23 +2058,30 @@ function loadTourPuzzle(){
 }
 
 // Automated tour demo helpers
-let _tourDemoTimeout = null;
+let _tourDemoTimeouts = []; // Track all timeouts for cleanup
+
+function clearAllDemoTimeouts() {
+  _tourDemoTimeouts.forEach(id => clearTimeout(id));
+  _tourDemoTimeouts = [];
+}
 
 function typeLetterAnimated(letter, delay = 0) {
   return new Promise(resolve => {
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       typeLetter(letter);
       resolve();
     }, delay);
+    _tourDemoTimeouts.push(timeoutId);
   });
 }
 
 function submitAnimated(delay = 0) {
   return new Promise(resolve => {
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       submit();
       resolve();
     }, delay);
+    _tourDemoTimeouts.push(timeoutId);
   });
 }
 
@@ -2084,11 +2091,17 @@ async function automatedDemoStep(word) {
     await typeLetterAnimated(word[i], 200);
   }
   // Wait a bit before submitting
-  await new Promise(resolve => setTimeout(resolve, 400));
+  await new Promise(resolve => {
+    const timeoutId = setTimeout(resolve, 400);
+    _tourDemoTimeouts.push(timeoutId);
+  });
   // Submit the word
   await submitAnimated();
   // Wait for animation to complete
-  await new Promise(resolve => setTimeout(resolve, 600));
+  await new Promise(resolve => {
+    const timeoutId = setTimeout(resolve, 600);
+    _tourDemoTimeouts.push(timeoutId);
+  });
 }
 
 function startTour(){
@@ -2168,41 +2181,42 @@ function startTour(){
       // Custom navigation to handle step transitions with automated demos
       onBeforeStepChange: async (oldStep, newStep) => {
         // Clear any pending demo timeouts
-        if(_tourDemoTimeout) {
-          clearTimeout(_tourDemoTimeout);
-          _tourDemoTimeout = null;
-        }
+        clearAllDemoTimeouts();
         
         // Perform automated actions at specific steps
         if(newStep === 2) {
           // After step 1, automatically type and submit "ROCK"
-          _tourDemoTimeout = setTimeout(async () => {
+          const timeoutId = setTimeout(async () => {
             await automatedDemoStep('ROCK');
           }, 800);
+          _tourDemoTimeouts.push(timeoutId);
           return true;
         }
         
         if(newStep === 4) {
           // After step 3, automatically type and submit "WORD"
-          _tourDemoTimeout = setTimeout(async () => {
+          const timeoutId = setTimeout(async () => {
             await automatedDemoStep('WORD');
           }, 800);
+          _tourDemoTimeouts.push(timeoutId);
           return true;
         }
         
         if(newStep === 5) {
           // After step 4, automatically type and submit "WANDER"
-          _tourDemoTimeout = setTimeout(async () => {
+          const timeoutId = setTimeout(async () => {
             await automatedDemoStep('WANDER');
           }, 800);
+          _tourDemoTimeouts.push(timeoutId);
           return true;
         }
         
         if(newStep === 6) {
           // After step 5, automatically type and submit "WIZARD"
-          _tourDemoTimeout = setTimeout(async () => {
+          const timeoutId = setTimeout(async () => {
             await automatedDemoStep('WIZARD');
           }, 800);
+          _tourDemoTimeouts.push(timeoutId);
           return true;
         }
         
@@ -2216,10 +2230,7 @@ function startTour(){
 
     _tgInstance.onAfterExit(() => {
       // Clear any pending demo timeouts
-      if(_tourDemoTimeout) {
-        clearTimeout(_tourDemoTimeout);
-        _tourDemoTimeout = null;
-      }
+      clearAllDemoTimeouts();
       
       // Restore state and clean up
       _inTourMode = false;
