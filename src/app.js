@@ -396,6 +396,7 @@ const feedbackLink = document.getElementById('feedbackLink');
 
 // Track practice puzzle count for ad display
 let practicePuzzlesCompleted = 0;
+let isShowingPracticeCompletion = false;
 const howToPlayLink = document.getElementById('howToPlayLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
@@ -653,8 +654,8 @@ function computeNextFlowIndex(wi){
   if(!isLocked(wi, idx)){ return idx; }
   
   // Otherwise, find the next unlocked position
-  const anyEmptyEditable = state.entries[wi].some((c, p)=> !isLocked(wi,p) && c==='');
-  if(!anyEmptyEditable){ return Math.max(0, L-1); }
+  const anyUnlocked = state.entries[wi].some((c, p)=> !isLocked(wi,p));
+  if(!anyUnlocked){ return Math.max(0, L-1); }
   for(let p=idx+1; p<L; p++){ if(!isLocked(wi,p)){ return p; } }
   for(let p=idx-1; p>=0; p--){ if(!isLocked(wi,p)){ return p; } }
   return idx;
@@ -1311,10 +1312,12 @@ function showCompletionOverlay(fromAllIn){
   const streak = updateStreakOnWin();
   if(!state.isPractice){
     streakLine.textContent = `🔥 Streak ${streak}`; streakLine.hidden=false;
+    isShowingPracticeCompletion = false;
   } else { 
     streakLine.hidden = true;
     // Increment practice puzzle count
     practicePuzzlesCompleted++;
+    isShowingPracticeCompletion = true;
   }
 
   const shareText = buildSilhouetteShare(streak, badgeWord);
@@ -1327,6 +1330,7 @@ function showCompletionOverlay(fromAllIn){
       primaryText:"Try Another", 
       onPrimary:()=>{
         modalEl.classList.remove('show');
+        isShowingPracticeCompletion = false;
         beginPracticePuzzle();
       }, 
       showShare:false
@@ -1500,8 +1504,9 @@ modalClose.addEventListener('click', ()=> {
   }
   setModalCloseCancelsAllIn(false);
   
-  // If closing from practice mode, return to daily
-  if(state && state.isPractice && modalClose.textContent === "Main Menu"){
+  // If closing from practice completion modal, return to daily
+  if(isShowingPracticeCompletion){
+    isShowingPracticeCompletion = false;
     modalEl.classList.remove('show');
     goToDaily();
     return;
@@ -1583,7 +1588,7 @@ function showPracticeInterstitial(){
   }
   setActions({
     closeText:"Not now",
-    primaryText:"Start Practice",
+    primaryText:"Continue",
     onPrimary:()=>{
       modalEl.classList.remove('show');
       beginPracticePuzzle();
