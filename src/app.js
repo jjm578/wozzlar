@@ -371,6 +371,7 @@ const shareButton = document.getElementById('shareButton');
 const splashScreen = document.getElementById('splashScreen');
 const splashPlayBtn = document.getElementById('splashPlayBtn');
 const splashLoginBtn = document.getElementById('splashLoginBtn');
+const splashLoginMessage = document.getElementById('splashLoginMessage');
 const splashDate = document.getElementById('splashDate');
 const splashNumber = document.getElementById('splashNumber');
 
@@ -1336,11 +1337,15 @@ function showCompletionOverlay(fromAllIn){
       showShare:false
     });
   } else if(state.isPractice && practicePuzzlesCompleted >= 2){
-    // After second puzzle, show ad again
+    // After second puzzle, show "Try Another" that triggers ad
     setActions({
       closeText:"Main Menu", 
-      primaryText:null, 
-      onPrimary:null, 
+      primaryText:"Try Another", 
+      onPrimary:()=>{
+        modalEl.classList.remove('show');
+        isShowingPracticeCompletion = false;
+        showPracticeInterstitial();
+      }, 
       showShare:false
     });
     practicePuzzlesCompleted = 0; // Reset counter
@@ -2258,7 +2263,7 @@ function initSplashScreen(){
   
   // Handle Login button click
   splashLoginBtn.addEventListener('click', ()=>{
-    showInfoModal("Log in feature coming soon! When available, you'll be able to view stats and ensure that your badges and streaks are preserved, even if cookies are deleted.");
+    splashLoginMessage.classList.toggle('show');
   });
 }
 
