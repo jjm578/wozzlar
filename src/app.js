@@ -970,6 +970,18 @@ function typeLetter(ch){
   saveDailyState();
 }
 
+function findNextUnlockedPos(wi, startPos, L){
+  // Try forward first
+  let pos = startPos + 1;
+  while(pos < L && isLocked(wi, pos)){ pos++; }
+  if(pos < L) return pos;
+  
+  // No unlocked position forward, try backward from start
+  pos = startPos - 1;
+  while(pos >= 0 && isLocked(wi, pos)){ pos--; }
+  return pos; // Returns -1 if no unlocked position found
+}
+
 function typeNormal(ch){
   const wi = state.active; if(state.solvedWord[wi]) return;
   const L = state.entries[wi].length;
@@ -977,33 +989,23 @@ function typeNormal(ch){
   
   // If current position is locked (pink tile), skip to next unlocked position
   if(isLocked(wi,pos)){
-    // Find next unlocked position
-    let nextPos = pos + 1;
-    while(nextPos < L && isLocked(wi, nextPos)){ nextPos++; }
-    if(nextPos < L){
-      pos = nextPos;
-    } else {
-      // No unlocked position forward, try backward
-      nextPos = pos - 1;
-      while(nextPos >= 0 && isLocked(wi, nextPos)){ nextPos--; }
-      if(nextPos >= 0){
-        pos = nextPos;
-      } else {
-        // All positions are locked, do nothing
-        paintRows(); updateNormalCaretHighlight(); updateControlsState();
-        return;
-      }
+    const unlockedPos = findNextUnlockedPos(wi, pos, L);
+    if(unlockedPos < 0){
+      // All positions are locked, do nothing
+      paintRows(); updateNormalCaretHighlight(); updateControlsState();
+      return;
     }
+    pos = unlockedPos;
   }
   
   // Replace letter at current position (whether empty or filled)
   state.entries[wi][pos] = ch;
   
   // Move to next position, skipping over locked tiles
-  pos++;
-  while(pos < L && isLocked(wi, pos)){ pos++; }
+  const advancePos = findNextUnlockedPos(wi, pos, L);
+  // If no unlocked position found forward, stay at current position
+  state.flowIndex[wi] = advancePos >= 0 ? advancePos : pos;
   
-  state.flowIndex[wi] = Math.min(pos, L-1);
   paintRows(); updateNormalCaretHighlight(); updateControlsState();
 }
 
