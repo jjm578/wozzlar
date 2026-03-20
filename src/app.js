@@ -970,6 +970,13 @@ function typeLetter(ch){
   saveDailyState();
 }
 
+/**
+ * Finds the next unlocked position in a word, searching forward first then backward.
+ * @param {number} wi - Word index
+ * @param {number} startPos - Starting position to search from
+ * @param {number} L - Length of the word (number of tiles/positions)
+ * @returns {number} Index of next unlocked position, or -1 if none found
+ */
 function findNextUnlockedPos(wi, startPos, L){
   // Try forward first
   let pos = startPos + 1;
@@ -1001,10 +1008,11 @@ function typeNormal(ch){
   // Replace letter at current position (whether empty or filled)
   state.entries[wi][pos] = ch;
   
-  // Move to next position, skipping over locked tiles
-  const advancePos = findNextUnlockedPos(wi, pos, L);
-  // If no unlocked position found forward, stay at current position
-  state.flowIndex[wi] = advancePos >= 0 ? advancePos : pos;
+  // Move to next unlocked position (searches forward then backward)
+  const nextPos = findNextUnlockedPos(wi, pos, L);
+  // If no unlocked position found, stay at current position
+  // (current position is guaranteed unlocked by the check above)
+  state.flowIndex[wi] = nextPos >= 0 ? nextPos : pos;
   
   paintRows(); updateNormalCaretHighlight(); updateControlsState();
 }
