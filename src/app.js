@@ -974,19 +974,35 @@ function typeNormal(ch){
   const wi = state.active; if(state.solvedWord[wi]) return;
   const L = state.entries[wi].length;
   let pos = Math.max(0, Math.min(state.flowIndex[wi] || 0, L-1));
+  
+  // If current position is locked (pink tile), skip to next unlocked position
   if(isLocked(wi,pos)){
-    state.flowIndex[wi] = Math.min(pos + 1, L-1);
-    paintRows(); updateNormalCaretHighlight(); updateControlsState();
-    return;
+    // Find next unlocked position
+    let nextPos = pos + 1;
+    while(nextPos < L && isLocked(wi, nextPos)){ nextPos++; }
+    if(nextPos < L){
+      pos = nextPos;
+    } else {
+      // No unlocked position forward, try backward
+      nextPos = pos - 1;
+      while(nextPos >= 0 && isLocked(wi, nextPos)){ nextPos--; }
+      if(nextPos >= 0){
+        pos = nextPos;
+      } else {
+        // All positions are locked, do nothing
+        paintRows(); updateNormalCaretHighlight(); updateControlsState();
+        return;
+      }
+    }
   }
-  if(state.entries[wi][pos] === ''){
-    state.entries[wi][pos] = ch;
-    pos++;
-  } else {
-    let p2 = pos + 1;
-    while(p2 < L && (isLocked(wi,p2) || state.entries[wi][p2] !== '')) p2++;
-    if(p2 < L){ state.entries[wi][p2] = ch; pos = p2 + 1; }
-  }
+  
+  // Replace letter at current position (whether empty or filled)
+  state.entries[wi][pos] = ch;
+  
+  // Move to next position, skipping over locked tiles
+  pos++;
+  while(pos < L && isLocked(wi, pos)){ pos++; }
+  
   state.flowIndex[wi] = Math.min(pos, L-1);
   paintRows(); updateNormalCaretHighlight(); updateControlsState();
 }
